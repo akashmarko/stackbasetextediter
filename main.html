@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Stack-Based Text Editor - Learn Data Structures</title>
+  <style>
+    :root {
+      --primary-color: #2c3e50;
+      --secondary-color: #3498db;
+      --accent-color: #e74c3c;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f8f9fa;
+      color: var(--primary-color);
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 40px;
+      padding: 20px;
+      background-color: white;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .header h1 {
+      color: var(--secondary-color);
+      margin: 0;
+      font-size: 2.5em;
+    }
+
+    .header p {
+      color: #7f8c8d;
+      max-width: 600px;
+      margin: 10px auto;
+    }
+
+    /* ---------- Desktop Layout ---------- */
+    .pc-layout {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    .pc-layout .stack-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 250px;
+      min-height: 400px;
+      border-top: 5px solid var(--accent-color);
+    }
+
+    .pc-layout .undo-stack {
+      border-left: 4px solid var(--secondary-color);
+    }
+
+    .pc-layout .redo-stack {
+      border-right: 4px solid #27ae60;
+    }
+
+    .pc-layout .stack-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .pc-layout .stack-title svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .pc-layout .stack-item {
+      background-color: #ecf0f1;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 5px;
+      position: relative;
+      transition: transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .pc-layout .stack-item::before {
+      content: "→";
+      color: #bdc3c7;
+      position: absolute;
+      left: -25px;
+      display: none;
+    }
+
+    .pc-layout .undo-stack .stack-item::before {
+      display: block;
+    }
+
+    .pc-layout .editor-container {
+      background-color: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      width: 500px;
+    }
+
+    .pc-layout textarea {
+      width: 100%;
+      height: 250px;
+      padding: 15px;
+      border: 2px solid #bdc3c7;
+      border-radius: 8px;
+      resize: vertical;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .pc-layout .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .pc-layout button {
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: var(--secondary-color);
+      color: white;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .pc-layout button:hover {
+      background-color: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    .pc-layout button:active {
+      transform: translateY(0);
+    }
+
+    .pc-layout .status {
+      background-color: #ecf0f1;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      color: #7f8c8d;
+      text-align: center;
+    }
+
+    .pc-layout .instruction {
+      background-color: #f1f2f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 30px;
+    }
+
+    .pc-layout .instruction h3 {
+      color: var(--secondary-color);
+      margin-top: 0;
+    }
+
+    .pc-layout .keyboard-shortcut {
+      display: inline-block;
+      padding: 4px 8px;
+      background-color: #dfe6e9;
+      border-radius: 4px;
+      font-family: monospace;
+    }
+
+    /* ---------- Mobile Layout ---------- */
+    .mobile-layout {
+      display: none;
+      max-width: 100%;
+      margin: 0 auto;
+    }
+
+    .mobile-layout .instruction {
+      background-color: #f1f2f6;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+
+    .mobile-layout .instruction h3 {
+      color: var(--secondary-color);
+      margin-top: 0;
+    }
+
+    .mobile-layout .editor-container {
+      background-color: white;
+      padding: 25px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+
+    .mobile-layout textarea {
+      width: 100%;
+      height: 200px;
+      padding: 15px;
+      border: 2px solid #bdc3c7;
+      border-radius: 8px;
+      resize: vertical;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+    }
+
+    .mobile-layout .buttons {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .mobile-layout button {
+      padding: 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      background-color: var(--secondary-color);
+      color: white;
+      font-weight: 600;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .mobile-layout button:hover {
+      background-color: #2980b9;
+      transform: translateY(-1px);
+    }
+
+    .mobile-layout button:active {
+      transform: translateY(0);
+    }
+
+    .mobile-layout .status {
+      background-color: #ecf0f1;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.9em;
+      color: #7f8c8d;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .mobile-layout .mobile-stacks {
+      display: flex;
+      gap: 10px;
+    }
+
+    .mobile-layout .mobile-stacks .stack-container {
+      flex: 1;
+      min-height: 300px;
+    }
+
+    .mobile-layout .stack-container {
+      background-color: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      border-top: 5px solid var(--accent-color);
+    }
+
+    .mobile-layout .undo-stack {
+      border-left: 4px solid var(--secondary-color);
+    }
+
+    .mobile-layout .redo-stack {
+      border-right: 4px solid #27ae60;
+    }
+
+    .mobile-layout .stack-title {
+      font-weight: 600;
+      color: var(--primary-color);
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .mobile-layout .stack-title svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    .mobile-layout .stack-item {
+      background-color: #ecf0f1;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 5px;
+      position: relative;
+      transition: transform 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .mobile-layout .stack-item::before {
+      content: "→";
+      color: #bdc3c7;
+      position: absolute;
+      left: -25px;
+      display: none;
+    }
+
+    .mobile-layout .undo-stack .stack-item::before {
+      display: block;
+    }
+
+    /* ---------- Responsive Switch ---------- */
+    @media (max-width: 768px) {
+      .pc-layout {
+        display: none;
+      }
+      .mobile-layout {
+        display: block;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Stack-Based Text Editor</h1>
+    <p>
+      Visualize how undo/redo operations work using stack data structures. Type in the editor and watch the stacks update in real-time!
+    </p>
+  </div>
+
+  <!-- Desktop Layout -->
+  <div class="container pc-layout">
+    <!-- Undo Stack (left) -->
+    <div class="stack-container undo-stack">
+      <div class="stack-title">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 12.5L12 18.5L18 12.5M12 5.5V17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Undo Stack
+        <span id="undo-count">(0)</span>
+      </div>
+      <div id="undo-visual"></div>
+    </div>
+
+    <!-- Editor (center) -->
+    <div class="editor-container">
+      <textarea id="text" placeholder="Start typing here..."></textarea>
+      <div class="buttons">
+        <button onclick="undo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+          Undo (Ctrl+Z)
+        </button>
+        <button onclick="redo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 7v6h-6"/>
+            <path d="M3 17a9 9 0 0 0 9-9 9 9 0 0 0 6-2.3L21 13"/>
+          </svg>
+          Redo (Ctrl+Y)
+        </button>
+      </div>
+      <div id="status" class="status"></div>
+      <div class="instruction">
+        <h3>How it works</h3>
+        <p>
+          • Type normally in the text area<br>
+          • Each character is pushed to the Undo stack<br>
+          • <span class="keyboard-shortcut">Ctrl+Z</span>: Pop from Undo stack to Redo stack<br>
+          • <span class="keyboard-shortcut">Ctrl+Y</span>: Pop from Redo stack back to Undo stack<br>
+          • Watch the stack visualizations update in real-time!
+        </p>
+      </div>
+    </div>
+
+    <!-- Redo Stack (right) -->
+    <div class="stack-container redo-stack">
+      <div class="stack-title">
+        <span id="redo-count">(0)</span>
+        Redo Stack
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+          <path d="M6 12.5L12 18.5L18 12.5M12 5.5V17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div id="redo-visual"></div>
+    </div>
+  </div>
+
+  <!-- Mobile Layout -->
+  <div class="container mobile-layout">
+    <!-- "How it works" now appears above the text area -->
+    <div class="instruction">
+      <h3>How it works</h3>
+      <p>
+        • Type normally in the text area<br>
+        • Each character is pushed to the Undo stack<br>
+        • <span class="keyboard-shortcut">Ctrl+Z</span>: Pop from Undo stack to Redo stack<br>
+        • <span class="keyboard-shortcut">Ctrl+Y</span>: Pop from Redo stack back to Undo stack<br>
+        • Watch the stack visualizations update in real-time!
+      </p>
+    </div>
+
+    <!-- Editor -->
+    <div class="editor-container">
+      <textarea id="text-mobile" placeholder="Start typing here..."></textarea>
+      <div class="buttons">
+        <button onclick="undo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M3 7v6h6"/>
+            <path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>
+          </svg>
+          Undo (Ctrl+Z)
+        </button>
+        <button onclick="redo()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 7v6h-6"/>
+            <path d="M3 17a9 9 0 0 0 9-9 9 9 0 0 0 6-2.3L21 13"/>
+          </svg>
+          Redo (Ctrl+Y)
+        </button>
+      </div>
+      <div id="status-mobile" class="status"></div>
+    </div>
+
+    <!-- Stacks placed side by side below the text area -->
+    <div class="mobile-stacks">
+      <div class="stack-container undo-stack">
+        <div class="stack-title">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 12.5L12 18.5L18 12.5M12 5.5V17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Undo Stack
+          <span id="undo-count-mobile">(0)</span>
+        </div>
+        <div id="undo-visual-mobile"></div>
+      </div>
+      <div class="stack-container redo-stack">
+        <div class="stack-title">
+          <span id="redo-count-mobile">(0)</span>
+          Redo Stack
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M6 12.5L12 18.5L18 12.5M12 5.5V17.5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <div id="redo-visual-mobile"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Shared data model for both layouts.
+    let undoStack = [];
+    let redoStack = [];
+    let prevText = '';
+
+    // Grab both PC and mobile textareas.
+    const textareaPC = document.getElementById('text');
+    const textareaMobile = document.getElementById('text-mobile');
+
+    // PC elements.
+    const undoVisualPC = document.getElementById('undo-visual');
+    const redoVisualPC = document.getElementById('redo-visual');
+    const undoCountPC = document.getElementById('undo-count');
+    const redoCountPC = document.getElementById('redo-count');
+
+    // Mobile elements.
+    const undoVisualMobile = document.getElementById('undo-visual-mobile');
+    const redoVisualMobile = document.getElementById('redo-visual-mobile');
+    const undoCountMobile = document.getElementById('undo-count-mobile');
+    const redoCountMobile = document.getElementById('redo-count-mobile');
+
+    // Attach input event listeners (both layouts share the same handler).
+    if (textareaPC) {
+      textareaPC.addEventListener('input', handleInput);
+    }
+    if (textareaMobile) {
+      textareaMobile.addEventListener('input', handleInput);
+    }
+    document.addEventListener('keydown', handleKeyPress);
+
+    function handleInput(e) {
+      const currentText = e.target.value;
+      if (currentText.length > prevText.length) {
+        const addedText = currentText.slice(prevText.length);
+        addedText.split('').forEach(char => {
+          undoStack.push(char);
+          redoStack = [];
+        });
+      } else {
+        const removedCount = prevText.length - currentText.length;
+        for (let i = 0; i < removedCount; i++) {
+          if (undoStack.length > 0) {
+            const popped = undoStack.pop();
+            redoStack.push(popped);
+          }
+        }
+      }
+      prevText = currentText;
+      updateVisualization();
+      syncTextareas();
+    }
+
+    function syncTextareas() {
+      const text = undoStack.join('');
+      if (textareaPC) {
+        textareaPC.value = text;
+      }
+      if (textareaMobile) {
+        textareaMobile.value = text;
+      }
+    }
+
+    function undo() {
+      if (undoStack.length === 0) {
+        showStatus('Nothing to undo!');
+        return;
+      }
+      const popped = undoStack.pop();
+      redoStack.push(popped);
+      updateText();
+      updateVisualization();
+      showStatus(`Undo: '${formatChar(popped)}'`);
+    }
+
+    function redo() {
+      if (redoStack.length === 0) {
+        showStatus('Nothing to redo!');
+        return;
+      }
+      const popped = redoStack.pop();
+      undoStack.push(popped);
+      updateText();
+      updateVisualization();
+      showStatus(`Redo: '${formatChar(popped)}'`);
+    }
+
+    function updateText() {
+      const text = undoStack.join('');
+      if (textareaPC) {
+        textareaPC.value = text;
+      }
+      if (textareaMobile) {
+        textareaMobile.value = text;
+      }
+      prevText = text;
+    }
+
+    function updateVisualization() {
+      const undoHTML = undoStack
+        .slice()
+        .reverse()
+        .map(char => `<div class="stack-item">${char === ' ' ? '␣' : char}</div>`)
+        .join('');
+      const redoHTML = redoStack
+        .slice()
+        .reverse()
+        .map(char => `<div class="stack-item">${char === ' ' ? '␣' : char}</div>`)
+        .join('');
+
+      if (undoVisualPC) {
+        undoVisualPC.innerHTML = undoHTML;
+        undoCountPC.textContent = undoStack.length;
+      }
+      if (redoVisualPC) {
+        redoVisualPC.innerHTML = redoHTML;
+        redoCountPC.textContent = redoStack.length;
+      }
+      if (undoVisualMobile) {
+        undoVisualMobile.innerHTML = undoHTML;
+        undoCountMobile.textContent = undoStack.length;
+      }
+      if (redoVisualMobile) {
+        redoVisualMobile.innerHTML = redoHTML;
+        redoCountMobile.textContent = redoStack.length;
+      }
+    }
+
+    function handleKeyPress(e) {
+      if (e.ctrlKey) {
+        if (e.key === 'z') {
+          e.preventDefault();
+          undo();
+        } else if (e.key === 'y') {
+          e.preventDefault();
+          redo();
+        }
+      }
+    }
+
+    function showStatus(message, duration = 2000) {
+      const statusPC = document.getElementById('status');
+      const statusMobile = document.getElementById('status-mobile');
+      if (statusPC) {
+        statusPC.textContent = message;
+        setTimeout(() => (statusPC.textContent = ''), duration);
+      }
+      if (statusMobile) {
+        statusMobile.textContent = message;
+        setTimeout(() => (statusMobile.textContent = ''), duration);
+      }
+    }
+
+    function formatChar(char) {
+      return {
+        ' ': 'Space',
+        '\n': 'Newline',
+        '\t': 'Tab'
+      }[char] || char;
+    }
+  </script>
+</body>
+</html>
